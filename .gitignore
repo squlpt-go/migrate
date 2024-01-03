@@ -1,0 +1,4 @@
+/test/.migrate.lock.json
+.DS_Store
+.idea
+.migrate.env

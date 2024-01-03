@@ -1,0 +1,4 @@
+{
+  "dirs": ["start", "iter"],
+  "file_extensions": [".sql", ".mysql"]
+}

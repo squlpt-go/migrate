@@ -1,0 +1,9 @@
+{
+  "migrations": [
+    {
+      "filepath": ["/some/path.sql"],
+      "timestamp": "2006-01-02T15:04:05Z",
+      "sum": "abc123"
+    }
+  ]
+}
