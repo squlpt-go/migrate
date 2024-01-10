@@ -56,7 +56,7 @@ type Result struct {
 
 type Results []Result
 
-func Migrate(db *sql.DB, config Config) ([]Result, error) {
+func Run(db *sql.DB, config Config) ([]Result, error) {
 	var l lock
 
 	if !config.IgnoreLockFile {
@@ -80,17 +80,6 @@ func Migrate(db *sql.DB, config Config) ([]Result, error) {
 	}
 
 	return results, err
-}
-
-func firstN(s string, n int) string {
-	i := 0
-	for j := range s {
-		if i == n {
-			return s[:j]
-		}
-		i++
-	}
-	return s
 }
 
 func PrintOutput(results []Result, err error) {
@@ -295,4 +284,15 @@ func calculateSum(filepath string) (string, error) {
 	hashString := hex.EncodeToString(hashInBytes)
 
 	return hashString, nil
+}
+
+func firstN(s string, n int) string {
+	i := 0
+	for j := range s {
+		if i == n {
+			return s[:j]
+		}
+		i++
+	}
+	return s
 }

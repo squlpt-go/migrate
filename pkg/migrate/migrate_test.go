@@ -185,7 +185,7 @@ func TestLockHasFile(t *testing.T) {
 	}
 }
 
-func TestMigrate(t *testing.T) {
+func TestRun(t *testing.T) {
 	db := getTestDB()
 	lockFilePath := testPath(DefaultLockFile)
 	_ = os.Remove(lockFilePath)
@@ -195,7 +195,7 @@ func TestMigrate(t *testing.T) {
 		t.Fatalf("Error loading config file: %v", err)
 	}
 
-	results, err := Migrate(db, config)
+	results, err := Run(db, config)
 	PrintOutput(results, err)
 	if err != nil {
 		t.Fatalf("Error migrating: %v", err)
@@ -206,7 +206,7 @@ func TestMigrate(t *testing.T) {
 		t.Fatalf("Error loading config file: %v", err)
 	}
 
-	results, err = Migrate(db, config)
+	results, err = Run(db, config)
 	PrintOutput(results, err)
 	if err != nil {
 		t.Fatalf("Error migrating: %v", err)
@@ -216,7 +216,7 @@ func TestMigrate(t *testing.T) {
 		t.Fatalf("invalid result set should be 4")
 	}
 
-	PrintOutput(Migrate(db, config))
+	PrintOutput(Run(db, config))
 }
 
 func TestPrintOutputErr(t *testing.T) {
