@@ -5,7 +5,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"os"
-	"path"
 	"reflect"
 	"regexp"
 	"strings"
@@ -13,21 +12,20 @@ import (
 	"time"
 )
 
-func testDir() string {
-	return CurrentDirname() + "/../../test/"
+func testPath(path string) string {
+	return CanonicalPath("/../../test/" + path)
 }
 
 var (
-	testConfigStart   = testDir() + "config-start.json"
-	testConfigIter    = testDir() + "config-iter.json"
-	testConfigFailure = testDir() + "config-failure.json"
-	testLock          = testDir() + "test-lock.json"
-	testLockFailure   = testDir() + "test-lock-failure.json"
+	testConfigStart   = testPath("config-start.json")
+	testConfigIter    = testPath("config-iter.json")
+	testConfigFailure = testPath("config-failure.json")
+	testLock          = testPath("test-lock.json")
+	testLockFailure   = testPath("test-lock-failure.json")
 )
 
 func getTestDB() *sql.DB {
-	dirname := CurrentDirname()
-	envFilePath := dirname + "/../../.migrate.env"
+	envFilePath := CanonicalPath("/../../.migrate.env")
 	err := godotenv.Load(envFilePath)
 	if err != nil {
 		panic(err)
@@ -49,7 +47,7 @@ func TestLoadConfigFile(t *testing.T) {
 		t.Fatalf("Error loading config file: %v", err)
 	}
 
-	expectedDirs := []string{path.Join(testDir(), "start/*.sql"), path.Join(testDir(), "iter/*.sql")}
+	expectedDirs := []string{testPath("start/*.sql"), testPath("iter/*.sql")}
 
 	if !reflect.DeepEqual(config.Paths, expectedDirs) {
 		t.Errorf("Unexpected Dirs in config. Expected: %v, Got: %v", expectedDirs, config.Paths)
@@ -78,8 +76,7 @@ func TestConfig_Merge(t *testing.T) {
 }
 
 func TestNewConfig(t *testing.T) {
-	d := CurrentDirname()
-	dir := path.Join(d, "../../test")
+	dir := CanonicalPath("../../test")
 	c := NewConfig(dir, []string{"start/*.sql", "iter/*.sql"})
 
 	if !strings.HasSuffix(c.LockFile, DefaultLockFile) {
@@ -138,7 +135,7 @@ func TestLoadLockFileFailure(t *testing.T) {
 }
 
 func TestGetDirFiles(t *testing.T) {
-	dir := testDir() + "start"
+	dir := testPath("start")
 
 	files, err := getDirFiles(dir)
 	if err != nil {
@@ -189,7 +186,7 @@ func TestLockHasFile(t *testing.T) {
 
 func TestMigrate(t *testing.T) {
 	db := getTestDB()
-	lockFilePath := path.Join(testDir(), DefaultLockFile)
+	lockFilePath := testPath(DefaultLockFile)
 	_ = os.Remove(lockFilePath)
 
 	config, err := loadConfigFile(testConfigStart)

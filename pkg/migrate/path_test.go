@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestCurrentDirname(t *testing.T) {
-	d := CurrentDirname()
+func TestCanonicalPath(t *testing.T) {
+	d := CanonicalPath("")
 
 	if !strings.HasPrefix(d, "/") {
 		t.Fatalf("invalid prefix: %s", d)

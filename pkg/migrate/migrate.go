@@ -19,7 +19,6 @@ import (
 )
 
 var DefaultLockFile = ".migrate.lock.json"
-var NoLockFile = "/NO/LOCK/FILE/"
 
 type Config struct {
 	Paths          []string `json:"paths"`
