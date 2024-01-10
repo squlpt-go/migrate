@@ -6,10 +6,7 @@ import (
 )
 
 func TestCurrentDirname(t *testing.T) {
-	d, err := CurrentDirname()
-	if err != nil {
-		t.Fatal(err)
-	}
+	d := CurrentDirname()
 
 	if !strings.HasPrefix(d, "/") {
 		t.Fatalf("invalid prefix: %s", d)

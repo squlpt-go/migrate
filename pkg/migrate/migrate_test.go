@@ -14,11 +14,7 @@ import (
 )
 
 func testDir() string {
-	dirname, err := CurrentDirname()
-	if err != nil {
-		panic(err)
-	}
-	return dirname + "/../../test/"
+	return CurrentDirname() + "/../../test/"
 }
 
 var (
@@ -30,12 +26,9 @@ var (
 )
 
 func getTestDB() *sql.DB {
-	dirname, err := CurrentDirname()
-	if err != nil {
-		panic(err)
-	}
+	dirname := CurrentDirname()
 	envFilePath := dirname + "/../../.migrate.env"
-	err = godotenv.Load(envFilePath)
+	err := godotenv.Load(envFilePath)
 	if err != nil {
 		panic(err)
 	}
@@ -85,10 +78,7 @@ func TestConfig_Merge(t *testing.T) {
 }
 
 func TestNewConfig(t *testing.T) {
-	d, err := CurrentDirname()
-	if err != nil {
-		t.Fatal(err)
-	}
+	d := CurrentDirname()
 	dir := path.Join(d, "../../test")
 	c := NewConfig(dir, []string{"start/*.sql", "iter/*.sql"})
 
