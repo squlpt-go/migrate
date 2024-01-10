@@ -19,10 +19,12 @@ import (
 )
 
 var DefaultLockFile = ".migrate.lock.json"
+var NoLockFile = "/NO/LOCK/FILE/"
 
 type Config struct {
-	Paths    []string `json:"paths"`
-	LockFile string   `json:"lock_file"`
+	Paths          []string `json:"paths"`
+	LockFile       string   `json:"lock_file"`
+	IgnoreLockFile bool
 }
 
 func (c *Config) AddPath(paths ...string) {
@@ -56,17 +58,25 @@ type Result struct {
 type Results []Result
 
 func Migrate(db *sql.DB, config Config) ([]Result, error) {
-	lock, err := loadLockFile(config.LockFile)
-	if err != nil {
-		return nil, err
+	var l lock
+
+	if !config.IgnoreLockFile {
+		var err error
+		l, err = loadLockFile(config.LockFile)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	results, err := doMigrate(db, config, lock)
+	results, err := doMigrate(db, config, l)
 	if results != nil {
-		lock.Migrations = append(lock.Migrations, results...)
-		writeErr := writeLockFile(config.LockFile, lock)
-		if writeErr != nil {
-			panic("cannot write lock file: " + writeErr.Error())
+		l.Migrations = append(l.Migrations, results...)
+
+		if !config.IgnoreLockFile {
+			writeErr := writeLockFile(config.LockFile, l)
+			if writeErr != nil {
+				panic("cannot write lock file: " + writeErr.Error())
+			}
 		}
 	}
 
