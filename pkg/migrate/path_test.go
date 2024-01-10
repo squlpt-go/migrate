@@ -6,7 +6,7 @@ import (
 )
 
 func TestCanonicalPath(t *testing.T) {
-	d := CanonicalPath("")
+	d := Path("")
 
 	if !strings.HasPrefix(d, "/") {
 		t.Fatalf("invalid prefix: %s", d)

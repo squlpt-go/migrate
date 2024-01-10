@@ -14,7 +14,7 @@ import (
 )
 
 func testPath(path string) string {
-	return CanonicalPath("/../../test/" + path)
+	return Path("/../../test/" + path)
 }
 
 var (
@@ -26,7 +26,7 @@ var (
 )
 
 func getTestDB() *sql.DB {
-	envFilePath := CanonicalPath("/../../.migrate.env")
+	envFilePath := Path("/../../.migrate.env")
 	err := godotenv.Load(envFilePath)
 	if err != nil {
 		panic(err)
@@ -77,7 +77,7 @@ func TestConfig_Merge(t *testing.T) {
 }
 
 func TestNewConfig(t *testing.T) {
-	dir := CanonicalPath("../../test")
+	dir := Path("../../test")
 	c := NewConfig(dir, []string{"start/*.sql", "iter/*.sql"})
 
 	if !strings.HasSuffix(c.LockFile, DefaultLockFile) {

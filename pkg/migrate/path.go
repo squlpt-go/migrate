@@ -6,7 +6,7 @@ import (
 	"runtime"
 )
 
-func CanonicalPath(filename string) string {
+func Path(filename string) string {
 	_, fp, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("unable to get the current filename")
