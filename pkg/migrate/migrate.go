@@ -82,6 +82,35 @@ func Migrate(db *sql.DB, config Config) ([]Result, error) {
 	return results, err
 }
 
+func firstN(s string, n int) string {
+	i := 0
+	for j := range s {
+		if i == n {
+			return s[:j]
+		}
+		i++
+	}
+	return s
+}
+
+func PrintOutput(results []Result, err error) {
+	if results != nil && len(results) > 0 {
+		fmt.Printf("%8s | %s\n", "Checksum", "Filename")
+		fmt.Printf("%8s | %s\n", strings.Repeat("-", 8), strings.Repeat("-", 80))
+		for _, r := range results {
+			fmt.Printf("%8s | %s\n", firstN(r.Sum, 8), r.Filepath)
+		}
+		return
+	}
+
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		return
+	}
+
+	fmt.Println("Nothing to migrate!")
+}
+
 func loadConfigFile(filename string) (Config, error) {
 	var config Config
 

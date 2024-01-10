@@ -2,6 +2,7 @@ package migrate
 
 import (
 	"database/sql"
+	"errors"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"os"
@@ -195,6 +196,7 @@ func TestMigrate(t *testing.T) {
 	}
 
 	results, err := Migrate(db, config)
+	PrintOutput(results, err)
 	if err != nil {
 		t.Fatalf("Error migrating: %v", err)
 	}
@@ -205,6 +207,7 @@ func TestMigrate(t *testing.T) {
 	}
 
 	results, err = Migrate(db, config)
+	PrintOutput(results, err)
 	if err != nil {
 		t.Fatalf("Error migrating: %v", err)
 	}
@@ -212,4 +215,10 @@ func TestMigrate(t *testing.T) {
 	if len(results) != 4 {
 		t.Fatalf("invalid result set should be 4")
 	}
+
+	PrintOutput(Migrate(db, config))
+}
+
+func TestPrintOutputErr(t *testing.T) {
+	PrintOutput(nil, errors.New("test error"))
 }
