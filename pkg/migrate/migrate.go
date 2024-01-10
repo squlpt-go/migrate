@@ -12,20 +12,17 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
 
-var defaultFileExtensions = []string{".sql"}
-var defaultLockFile = ".migrate.lock.json"
+var DefaultLockFile = ".migrate.lock.json"
 
 type Config struct {
-	Dirs           []string `json:"dirs"`
-	FileExtensions []string `json:"file_extensions"`
-	LockFile       string   `json:"lock_file"`
+	Paths    []string `json:"paths"`
+	LockFile string   `json:"lock_file"`
 }
 
 type Lock struct {
@@ -54,14 +51,14 @@ func LoadConfigFile(filename string) (Config, error) {
 	}
 
 	configDir := path.Dir(filename)
-	for i, dir := range config.Dirs {
-		if !strings.HasPrefix(dir, "/") {
-			config.Dirs[i] = path.Join(configDir, dir)
+	for i, p := range config.Paths {
+		if !strings.HasPrefix(p, "/") {
+			config.Paths[i] = path.Join(configDir, p)
 		}
 	}
 
 	if config.LockFile == "" {
-		config.LockFile = defaultLockFile
+		config.LockFile = DefaultLockFile
 	}
 
 	if !strings.HasPrefix(config.LockFile, "/") {
@@ -119,8 +116,8 @@ func writeLockFile(filepath string, lock Lock) error {
 
 func doMigrate(db *sql.DB, config Config, lock Lock) ([]Result, error) {
 	results := make([]Result, 0)
-	for _, dir := range config.Dirs {
-		r, err := migrateDir(db, config, lock, dir)
+	for _, glob := range config.Paths {
+		r, err := migrateGlob(db, lock, glob)
 		if r != nil {
 			results = append(results, r...)
 		}
@@ -132,31 +129,14 @@ func doMigrate(db *sql.DB, config Config, lock Lock) ([]Result, error) {
 	return results, nil
 }
 
-func migrateDir(db *sql.DB, config Config, lock Lock, dir string) ([]Result, error) {
-	files, err := getDirFiles(dir)
+func migrateGlob(db *sql.DB, lock Lock, glob string) ([]Result, error) {
+	files, err := filepath.Glob(glob)
 	if err != nil {
 		return nil, err
 	}
 
-	fileExtensions := config.FileExtensions
-	if fileExtensions == nil {
-		fileExtensions = defaultFileExtensions
-	}
-
 	results := make([]Result, 0)
-	for _, dirEntry := range files {
-		if dirEntry.IsDir() {
-			continue
-		}
-
-		ext := filepath.Ext(dirEntry.Name())
-
-		if !slices.Contains(fileExtensions, ext) {
-			continue
-		}
-
-		fp := path.Join(dir, dirEntry.Name())
-
+	for _, fp := range files {
 		if !lockHasFile(lock, fp) {
 			sum, err := calculateSum(fp)
 			if err != nil {

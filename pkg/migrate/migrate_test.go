@@ -13,7 +13,7 @@ import (
 )
 
 func testDir() string {
-	dirname, err := currentDirname()
+	dirname, err := CurrentDirname()
 	if err != nil {
 		panic(err)
 	}
@@ -29,7 +29,7 @@ var (
 )
 
 func getTestDB() *sql.DB {
-	dirname, err := currentDirname()
+	dirname, err := CurrentDirname()
 	if err != nil {
 		panic(err)
 	}
@@ -56,15 +56,10 @@ func TestLoadConfigFile(t *testing.T) {
 		t.Fatalf("Error loading config file: %v", err)
 	}
 
-	expectedDirs := []string{path.Join(testDir(), "start"), path.Join(testDir(), "iter")}
-	expectedFileExtensions := []string{".sql", ".mysql"}
+	expectedDirs := []string{path.Join(testDir(), "start/*.sql"), path.Join(testDir(), "iter/*.sql")}
 
-	if !reflect.DeepEqual(config.Dirs, expectedDirs) {
-		t.Errorf("Unexpected Dirs in config. Expected: %v, Got: %v", expectedDirs, config.Dirs)
-	}
-
-	if !reflect.DeepEqual(config.FileExtensions, expectedFileExtensions) {
-		t.Errorf("Unexpected FileExtensions in config. Expected: %v, Got: %v", expectedFileExtensions, config.FileExtensions)
+	if !reflect.DeepEqual(config.Paths, expectedDirs) {
+		t.Errorf("Unexpected Dirs in config. Expected: %v, Got: %v", expectedDirs, config.Paths)
 	}
 }
 
@@ -159,7 +154,7 @@ func TestLockHasFile(t *testing.T) {
 
 func TestMigrate(t *testing.T) {
 	db := getTestDB()
-	lockFilePath := path.Join(testDir(), defaultLockFile)
+	lockFilePath := path.Join(testDir(), DefaultLockFile)
 	_ = os.Remove(lockFilePath)
 
 	config, err := LoadConfigFile(testConfigStart)
