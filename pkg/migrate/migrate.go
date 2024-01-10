@@ -25,7 +25,25 @@ type Config struct {
 	LockFile string   `json:"lock_file"`
 }
 
-type Lock struct {
+func (c *Config) AddPath(paths ...string) {
+	c.Paths = append(c.Paths, paths...)
+}
+
+func (c *Config) Merge(config Config) {
+	c.AddPath(config.Paths...)
+}
+
+func NewConfig(dir string, paths []string) Config {
+	c := Config{
+		LockFile: path.Join(dir, DefaultLockFile),
+	}
+	for _, p := range paths {
+		c.AddPath(path.Join(dir, p))
+	}
+	return c
+}
+
+type lock struct {
 	Migrations []Result `json:"migrations"`
 }
 
@@ -37,7 +55,25 @@ type Result struct {
 
 type Results []Result
 
-func LoadConfigFile(filename string) (Config, error) {
+func Migrate(db *sql.DB, config Config) ([]Result, error) {
+	lock, err := loadLockFile(config.LockFile)
+	if err != nil {
+		return nil, err
+	}
+
+	results, err := doMigrate(db, config, lock)
+	if results != nil {
+		lock.Migrations = append(lock.Migrations, results...)
+		writeErr := writeLockFile(config.LockFile, lock)
+		if writeErr != nil {
+			panic("cannot write lock file: " + writeErr.Error())
+		}
+	}
+
+	return results, err
+}
+
+func loadConfigFile(filename string) (Config, error) {
 	var config Config
 
 	configFile, err := os.Open(filename)
@@ -68,45 +104,27 @@ func LoadConfigFile(filename string) (Config, error) {
 	return config, nil
 }
 
-func Migrate(db *sql.DB, config Config) ([]Result, error) {
-	lock, err := loadLockFile(config.LockFile)
-	if err != nil {
-		return nil, err
-	}
-
-	results, err := doMigrate(db, config, lock)
-	if results != nil {
-		lock.Migrations = append(lock.Migrations, results...)
-		writeErr := writeLockFile(config.LockFile, lock)
-		if writeErr != nil {
-			panic("cannot write lock file: " + writeErr.Error())
-		}
-	}
-
-	return results, err
-}
-
-func loadLockFile(filepath string) (Lock, error) {
-	var lock Lock
+func loadLockFile(filepath string) (lock, error) {
+	var l lock
 
 	if _, err := os.Stat(filepath); errors.Is(err, os.ErrNotExist) {
-		return Lock{}, nil
+		return lock{}, nil
 	}
 
 	configFile, err := os.Open(filepath)
 	if err != nil {
-		return Lock{}, fmt.Errorf("error reading lockfile: %w", err)
+		return lock{}, fmt.Errorf("error reading lockfile: %w", err)
 	}
 
 	jsonParser := json.NewDecoder(configFile)
-	if err = jsonParser.Decode(&lock); err != nil {
-		return Lock{}, fmt.Errorf("parsing lock file: %w", err)
+	if err = jsonParser.Decode(&l); err != nil {
+		return lock{}, fmt.Errorf("parsing lock file: %w", err)
 	}
 
-	return lock, nil
+	return l, nil
 }
 
-func writeLockFile(filepath string, lock Lock) error {
+func writeLockFile(filepath string, lock lock) error {
 	data, err := json.MarshalIndent(lock, "", "  ")
 	if err != nil {
 		return err
@@ -114,7 +132,7 @@ func writeLockFile(filepath string, lock Lock) error {
 	return os.WriteFile(filepath, data, 0644)
 }
 
-func doMigrate(db *sql.DB, config Config, lock Lock) ([]Result, error) {
+func doMigrate(db *sql.DB, config Config, lock lock) ([]Result, error) {
 	results := make([]Result, 0)
 	for _, glob := range config.Paths {
 		r, err := migrateGlob(db, lock, glob)
@@ -129,7 +147,7 @@ func doMigrate(db *sql.DB, config Config, lock Lock) ([]Result, error) {
 	return results, nil
 }
 
-func migrateGlob(db *sql.DB, lock Lock, glob string) ([]Result, error) {
+func migrateGlob(db *sql.DB, lock lock, glob string) ([]Result, error) {
 	files, err := filepath.Glob(glob)
 	if err != nil {
 		return nil, err
@@ -205,7 +223,7 @@ func extractNumber(s string, regex *regexp.Regexp) (int, bool) {
 	return num, true
 }
 
-func lockHasFile(lock Lock, filepath string) bool {
+func lockHasFile(lock lock, filepath string) bool {
 	for _, result := range lock.Migrations {
 		if filepath == result.Filepath {
 			return true

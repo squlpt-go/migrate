@@ -8,6 +8,7 @@ import (
 	"path"
 	"reflect"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 )
@@ -50,8 +51,7 @@ func getTestDB() *sql.DB {
 }
 
 func TestLoadConfigFile(t *testing.T) {
-	_ = getTestDB()
-	config, err := LoadConfigFile(testConfigIter)
+	config, err := loadConfigFile(testConfigIter)
 	if err != nil {
 		t.Fatalf("Error loading config file: %v", err)
 	}
@@ -63,9 +63,54 @@ func TestLoadConfigFile(t *testing.T) {
 	}
 }
 
+func TestConfig_AddPath(t *testing.T) {
+	c := Config{}
+	c.AddPath("/path1")
+	if !reflect.DeepEqual(c.Paths, []string{"/path1"}) {
+		t.Errorf("Unexpected Dirs in config. Got: %v", c.Paths)
+	}
+	c.AddPath("/path2", "/path3")
+	if !reflect.DeepEqual(c.Paths, []string{"/path1", "/path2", "/path3"}) {
+		t.Errorf("Unexpected Dirs in config. Got: %v", c.Paths)
+	}
+}
+
+func TestConfig_Merge(t *testing.T) {
+	c1 := Config{Paths: []string{"/path1", "/path2"}}
+	c2 := Config{Paths: []string{"/path3", "/path4"}}
+	c1.Merge(c2)
+	if !reflect.DeepEqual(c1.Paths, []string{"/path1", "/path2", "/path3", "/path4"}) {
+		t.Errorf("Unexpected Dirs in config. Got: %v", c1.Paths)
+	}
+}
+
+func TestNewConfig(t *testing.T) {
+	d, err := CurrentDirname()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := path.Join(d, "../../test")
+	c := NewConfig(dir, []string{"start/*.sql", "iter/*.sql"})
+
+	if !strings.HasSuffix(c.LockFile, DefaultLockFile) {
+		t.Fatalf("should end in default lock file name")
+	}
+
+	if c.LockFile == DefaultLockFile {
+		t.Fatalf("should not be the same as lock file name")
+	}
+
+	if len(c.Paths) != 2 {
+		t.Fatalf("should nbe 2 paths")
+	}
+
+	if !strings.HasSuffix(c.Paths[0], "start/*.sql") || !strings.HasSuffix(c.Paths[1], "iter/*.sql") {
+		t.Fatalf("invalid path values")
+	}
+}
+
 func TestLoadConfigFileFails(t *testing.T) {
-	_ = getTestDB()
-	_, err := LoadConfigFile(testConfigFailure)
+	_, err := loadConfigFile(testConfigFailure)
 	if err == nil {
 		t.Fatalf("expected error")
 	}
@@ -127,7 +172,7 @@ func TestExtractNumber(t *testing.T) {
 }
 
 func TestLockHasFile(t *testing.T) {
-	lock := Lock{
+	lock := lock{
 		Migrations: []Result{
 			{
 				Filepath:  "/test1.test",
@@ -157,7 +202,7 @@ func TestMigrate(t *testing.T) {
 	lockFilePath := path.Join(testDir(), DefaultLockFile)
 	_ = os.Remove(lockFilePath)
 
-	config, err := LoadConfigFile(testConfigStart)
+	config, err := loadConfigFile(testConfigStart)
 	if err != nil {
 		t.Fatalf("Error loading config file: %v", err)
 	}
@@ -167,7 +212,7 @@ func TestMigrate(t *testing.T) {
 		t.Fatalf("Error migrating: %v", err)
 	}
 
-	config, err = LoadConfigFile(testConfigIter)
+	config, err = loadConfigFile(testConfigIter)
 	if err != nil {
 		t.Fatalf("Error loading config file: %v", err)
 	}
@@ -177,5 +222,7 @@ func TestMigrate(t *testing.T) {
 		t.Fatalf("Error migrating: %v", err)
 	}
 
-	t.Log(results)
+	if len(results) != 4 {
+		t.Fatalf("invalid result set should be 4")
+	}
 }
